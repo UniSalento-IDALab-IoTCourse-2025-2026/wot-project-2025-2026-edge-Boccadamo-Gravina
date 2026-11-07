@@ -1,0 +1,21 @@
+services:
+
+  smartbox-emulator:
+    build: .
+    container_name: smartbox_emulator
+    environment:
+      - MQTT_BROKER=mqtt-broker
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
+      - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
+      - MQTT_TOPIC=telemetry/air_quality
+      - MQTT_TOPIC_STATUS=telemetry/status
+      - DEVICE_ID=smartbox-001
+      - INTERVAL_SECONDS=4  # Frequenza veloce per testare
+    networks:
+      - iot-network
+    restart: unless-stopped
+
+networks:
+  iot-network:
+    external: true

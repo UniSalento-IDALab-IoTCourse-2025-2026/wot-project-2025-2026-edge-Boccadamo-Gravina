@@ -19,12 +19,13 @@ MQTT_TOPIC_DATA = os.getenv("MQTT_TOPIC", "telemetry/air_quality")
 MQTT_TOPIC_STATUS = os.getenv("MQTT_TOPIC_STATUS", "telemetry/status")
 DEVICE_ID = os.getenv("DEVICE_ID", "smartbox-001")
 INTERVAL_SECONDS = float(os.getenv("INTERVAL_SECONDS", 5))
+DEBUG_DELTA_MEAN = float(os.getenv("DEBUG_DELTA_MEAN", 0))
 
 POLLUTANT_CONFIG = {
-    "no2": {"mean": 32.0, "std": 8.0},
-    "pm25": {"mean": 18.0, "std": 5.0},
-    "o3": {"mean": 55.0, "std": 12.0},
-    "pah": {"mean": 0.75, "std": 0.2}
+    "no2": {"mean": 32.0 + DEBUG_DELTA_MEAN, "std": 8.0},
+    "pm25": {"mean": 18.0 + DEBUG_DELTA_MEAN, "std": 5.0},
+    "o3": {"mean": 55.0 + DEBUG_DELTA_MEAN, "std": 12.0},
+    "pah": {"mean": 0.75 + DEBUG_DELTA_MEAN/10, "std": 0.2}
 }
 
 def generate_sensor_data() -> dict:

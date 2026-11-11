@@ -6,6 +6,7 @@ from config import CONFIG, is_esp32
 from sensors import get_sensor_manager
 from mqtt_client import DynamicMQTTClient
 
+
 # Inizializzazione moduli
 sensor_mgr = get_sensor_manager()
 mqtt_mgr = DynamicMQTTClient()
@@ -36,6 +37,7 @@ async def task_telemetry():
     """Invia la telemetria dei sensori ogni N secondi (default 3600s)."""
     interval = CONFIG["INTERVAL_TELEMETRY_SEC"]
     while not stop_event.is_set():
+        print("telemetry")
         try:
             telemetry_data = sensor_mgr.read_telemetry()
             mqtt_mgr.publish(CONFIG["MQTT_TOPIC_DATA"], telemetry_data)
@@ -49,58 +51,58 @@ async def task_telemetry():
             pass
 
 
-async def task_serial_input():
-    """Gestisce la shell interattiva da STDIN/Seriale in modo totalmente NON bloccante."""
-    print("[SHELL] Console attiva. Digita 'help' per i comandi.")
+# async def task_serial_input():
+#     """Gestisce la shell interattiva da STDIN/Seriale in modo totalmente NON bloccante."""
+#     print("[SHELL] Console attiva. Digita 'help' per i comandi.")
 
-    if is_esp32:
-        import uselect
-        spoll = uselect.poll()
-        spoll.register(sys.stdin, uselect.POLLIN)
+#     if is_esp32:
+#         import uselect
+#         spoll = uselect.poll()
+#         spoll.register(sys.stdin, uselect.POLLIN)
 
-        while not stop_event.is_set():
-            if spoll.poll(0):
-                cmd = sys.stdin.readline().strip().lower()
-                _process_command(cmd)
-            await asyncio.sleep(0.2)
-    else:
-        # Se il terminale non è interattivo (es. container senza tty)
-        if not sys.stdin.isatty():
-            print("[SHELL] Terminale non interattivo. Shell disabilitata.")
-            return
+#         while not stop_event.is_set():
+#             if spoll.poll(0):
+#                 cmd = sys.stdin.readline().strip().lower()
+#                 _process_command(cmd)
+#             await asyncio.sleep(0.2)
+#     else:
+#         # Se il terminale non è interattivo (es. container senza tty)
+#         if not sys.stdin.isatty():
+#             print("[SHELL] Terminale non interattivo. Shell disabilitata.")
+#             return
 
-        # Lettura non bloccante nativa per Linux/Docker tramite select()
-        while not stop_event.is_set():
-            # Controlla se ci sono caratteri pronti su STDIN senza bloccare la CPU
-            rlist, _, _ = select.select([sys.stdin], [], [], 0)
-            if rlist:
-                try:
-                    line = sys.stdin.readline()
-                    if not line:  # Rileva EOF (Ctrl+D)
-                        print("\n[SHELL] STDIN chiuso (EOF).")
-                        stop_event.set()
-                        break
-                    _process_command(line.strip().lower())
-                except Exception as e:
-                    print(f"[SHELL] Errore input: {e}")
+#         # Lettura non bloccante nativa per Linux/Docker tramite select()
+#         while not stop_event.is_set():
+#             # Controlla se ci sono caratteri pronti su STDIN senza bloccare la CPU
+#             rlist, _, _ = select.select([sys.stdin], [], [], 0)
+#             if rlist:
+#                 try:
+#                     line = sys.stdin.readline()
+#                     if not line:  # Rileva EOF (Ctrl+D)
+#                         print("\n[SHELL] STDIN chiuso (EOF).")
+#                         stop_event.set()
+#                         break
+#                     _process_command(line.strip().lower())
+#                 except Exception as e:
+#                     print(f"[SHELL] Errore input: {e}")
 
-            # Cede il controllo al loop di asyncio per 100ms
-            await asyncio.sleep(0.1)
+#             # Cede il controllo al loop di asyncio per 100ms
+#             await asyncio.sleep(0.1)
 
 
-def _process_command(cmd: str):
-    if cmd in ("exit", "quit", "shutdown"):
-        print("[CMD] Arresto in corso...")
-        stop_event.set()  # Segnala a tutti i task di terminare
-    elif cmd == "status":
-        print("[CMD] Invio immediato dello stato...")
-        mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], sensor_mgr.read_health(), retain=True)
-    elif cmd == "read":
-        print("[CMD] Lettura sensori:", sensor_mgr.read_telemetry())
-    elif cmd == "help":
-        print("[CMD] Comandi disponibili: 'status', 'read', 'shutdown', 'exit', 'quit', 'help'")
-    elif cmd != "":
-        print(f"[CMD] Comando sconosciuto: '{cmd}'")
+# def _process_command(cmd: str):
+#     if cmd in ("exit", "quit", "shutdown"):
+#         print("[CMD] Arresto in corso...")
+#         stop_event.set()  # Segnala a tutti i task di terminare
+#     elif cmd == "status":
+#         print("[CMD] Invio immediato dello stato...")
+#         mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], sensor_mgr.read_health(), retain=True)
+#     elif cmd == "read":
+#         print("[CMD] Lettura sensori:", sensor_mgr.read_telemetry())
+#     elif cmd == "help":
+#         print("[CMD] Comandi disponibili: 'status', 'read', 'shutdown', 'exit', 'quit', 'help'")
+#     elif cmd != "":
+#         print(f"[CMD] Comando sconosciuto: '{cmd}'")
 
 
 def shutdown_handler():
@@ -110,6 +112,19 @@ def shutdown_handler():
 
 
 async def main():
+    tasks = [
+        asyncio.create_task(task_status_heartbeat()),
+        asyncio.create_task(task_telemetry()),
+        # asyncio.create_task(task_serial_input()),
+    ]
+
+    # Avvia il monitor Wi-Fi ed esegui la connessione iniziale solo se su ESP32
+    if is_esp32:
+        from my_network import monitora_wifi
+        tasks.append(asyncio.create_task(monitora_wifi()))
+        # Diamo un secondo al task Wi-Fi per avviare l'interfaccia
+        await asyncio.sleep(1)
+
     mqtt_mgr.connect()
     mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], sensor_mgr.read_health(), retain=True)
 
@@ -123,12 +138,6 @@ async def main():
             except NotImplementedError:
                 pass
 
-    # Avvio dei task asincroni
-    tasks = [
-        asyncio.create_task(task_status_heartbeat()),
-        asyncio.create_task(task_telemetry()),
-        asyncio.create_task(task_serial_input())
-    ]
 
     # Il main rimane in attesa finché stop_event non viene attivato
     await stop_event.wait()

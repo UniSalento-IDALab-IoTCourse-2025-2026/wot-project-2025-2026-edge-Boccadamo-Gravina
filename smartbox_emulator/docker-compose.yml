@@ -13,7 +13,8 @@ services:
       - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
       - MQTT_TOPIC_DATA=telemetry/air_quality
       - MQTT_TOPIC_STATUS=telemetry/status
-      - DEVICE_ID=emulated-smartbox-001
+      - DEVICE_ID=smartbox-001
+      - DEBUG_DELTA_MEAN=0
       - INTERVAL_STATUS_SEC=30  # Frequenza veloce per testare
       - INTERVAL_TELEMETRY_SEC=4  # Frequenza veloce per testare
     networks:

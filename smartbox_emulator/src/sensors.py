@@ -1,7 +1,18 @@
+import math
 import random
 import time
 from config import CONFIG, POLLUTANT_CONFIG, is_esp32
 
+# Funzione helper globale: utilizzabile ovunque senza problemi
+def gauss(mu=0.0, sigma=1.0):
+    """Genera un numero con distribuzione gaussiana usando Box-Muller."""
+    u1 = random.random()
+    while u1 == 0:
+        u1 = random.random()
+    
+    u2 = random.random()
+    z0 = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
+    return mu + z0 * sigma
 
 class BaseSensorManager:
     def read_telemetry(self) -> dict:
@@ -49,10 +60,15 @@ class ESP32HardwareSensorManager(BaseSensorManager):
 
     def read_telemetry(self) -> dict:
         # Inserire le letture dei sensori reali
+        sensors = {}
+        for pollutant, params in POLLUTANT_CONFIG.items():
+            val = gauss(params["mean"], params["std"])
+            sensors[pollutant] = round(max(0.0, val), 2)
+
         return {
             "device_id": CONFIG["DEVICE_ID"],
             "timestamp": time.time(),
-            "sensors": {"no2": 0.0, "pm25": 0.0, "o3": 0.0, "pah": 0.0}
+            "sensors": sensors
         }
 
     def read_health(self) -> dict:

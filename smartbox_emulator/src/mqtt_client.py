@@ -35,7 +35,10 @@ class DynamicMQTTClient:
                         "status": "offline",
                         "reason": "unexpected_disconnection"
                     })
-                    self.client.set_will(self.topic_status, lwt_payload, retain=True, qos=1)
+                    # umqtt.simple richiede espressamente parametri di tipo bytes
+                    topic_bytes = self.topic_status.encode('utf-8') if isinstance(self.topic_status, str) else self.topic_status
+                    msg_bytes = lwt_payload.encode('utf-8') if isinstance(lwt_payload, str) else lwt_payload
+                    self.client.set_last_will(self.topic_status, lwt_payload, retain=True, qos=1)
                     self.client.connect()
                 else:
                     import paho.mqtt.client as paho
@@ -62,6 +65,10 @@ class DynamicMQTTClient:
                 time.sleep(5)
 
     def publish(self, topic: str, payload: dict, retain: bool = False):
+        if self.client is None:
+            print(f"[MQTT] Impossibile pubblicare su '{topic}': client non ancora connesso.")
+            return
+            
         msg = json.dumps(payload)
         if is_esp32:
             self.client.publish(topic.encode(), msg.encode(), retain=retain, qos=1)

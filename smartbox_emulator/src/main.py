@@ -37,7 +37,6 @@ async def task_telemetry():
     """Invia la telemetria dei sensori ogni N secondi (default 3600s)."""
     interval = CONFIG["INTERVAL_TELEMETRY_SEC"]
     while not stop_event.is_set():
-        print("telemetry")
         try:
             telemetry_data = sensor_mgr.read_telemetry()
             mqtt_mgr.publish(CONFIG["MQTT_TOPIC_DATA"], telemetry_data)

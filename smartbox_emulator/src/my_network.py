@@ -5,11 +5,9 @@ SSID = "Vodafone-C01900130"
 PASSWORD = "KpbZa2psh9HpzKZY"
 
 wlan = network.WLAN(network.STA_IF)
-print("eseguito mynetwork")
 
 async def monitora_wifi():
     """Task in background che mantiene attiva la connessione Wi-Fi."""
-    print("task mynetwork")
 
     wlan.active(True)
     while True:

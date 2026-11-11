@@ -1,52 +1,48 @@
 services:
 
-  smartbox-emulator1:
+  smartbox-emulator-1:
     build: .
-    container_name: smartbox_emulator1
+    container_name: smartbox_emulator_1
+    # init: true       # Inoltra correttamente Ctrl+C (SIGINT/SIGTERM) al processo Python
+    # stdin_open: true # Allocazione STDIN per l'input da tastiera
+    # tty: true        # Allocazione TTY per la shell interattiva
+    env_file:
+      - .env
     environment:
-      - MQTT_BROKER=mqtt-broker
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
-      - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
-      - MQTT_TOPIC=telemetry/air_quality
-      - MQTT_TOPIC_STATUS=telemetry/status
-      - DEVICE_ID=smartbox-001
+    #   - MQTT_BROKER=mqtt-broker
+    #   - MQTT_PORT=1883
+    #   - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
+    #   - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
+    #   - MQTT_TOPIC_DATA=telemetry/air_quality
+    #   - MQTT_TOPIC_STATUS=telemetry/status
+      - DEVICE_ID=sim-smartbox-001
       - DEBUG_DELTA_MEAN=0
-      - INTERVAL_SECONDS=4  # Frequenza veloce per testare
+    #   - INTERVAL_STATUS_SEC=30  # Frequenza veloce per testare
+    #   - INTERVAL_TELEMETRY_SEC=4  # Frequenza veloce per testare
     networks:
       - iot-network
     restart: on-failure
 
-  smartbox-emulator2:
+  smartbox-emulator-2:
     build: .
-    container_name: smartbox_emulator2
+    container_name: smartbox_emulator_2
+    env_file:
+      - .env
     environment:
-      - MQTT_BROKER=mqtt-broker
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
-      - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
-      - MQTT_TOPIC=telemetry/air_quality
-      - MQTT_TOPIC_STATUS=telemetry/status
-      - DEVICE_ID=smartbox-002
-      - DEBUG_DELTA_MEAN=-2
-      - INTERVAL_SECONDS=4  # Frequenza veloce per testare
+      - DEVICE_ID=sim-smartbox-002
+      - DEBUG_DELTA_MEAN=-3
     networks:
       - iot-network
     restart: on-failure
 
-  smartbox-emulator3:
+  smartbox-emulator-3:
     build: .
-    container_name: smartbox_emulator3
+    container_name: smartbox_emulator_3
+    env_file:
+      - .env
     environment:
-      - MQTT_BROKER=mqtt-broker
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
-      - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
-      - MQTT_TOPIC=telemetry/air_quality
-      - MQTT_TOPIC_STATUS=telemetry/status
-      - DEVICE_ID=smartbox-003
+      - DEVICE_ID=sim-smartbox-003
       - DEBUG_DELTA_MEAN=10
-      - INTERVAL_SECONDS=4  # Frequenza veloce per testare
     networks:
       - iot-network
     restart: on-failure

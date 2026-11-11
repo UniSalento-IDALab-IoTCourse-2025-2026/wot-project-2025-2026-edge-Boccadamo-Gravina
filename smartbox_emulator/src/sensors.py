@@ -1,6 +1,5 @@
 import math
 import random
-import time
 from config import CONFIG, POLLUTANT_CONFIG, is_esp32, get_iso_timestamp
 
 # Funzione helper globale: utilizzabile ovunque senza problemi
@@ -31,6 +30,10 @@ class SimulatedSensorManager(BaseSensorManager):
             val = gauss(params["mean"], params["std"])
             sensors[pollutant] = round(max(0.0, val), 2)
 
+        # Valori simulati per temperatura e umidità
+        sensors["temperature"] = round(gauss(22.5, 2.0), 1)
+        sensors["humidity"] = round(gauss(50.0, 5.0), 1)
+
         return {
             "device_id": CONFIG["DEVICE_ID"],
             "timestamp": get_iso_timestamp(),
@@ -38,25 +41,28 @@ class SimulatedSensorManager(BaseSensorManager):
         }
 
     def read_health(self) -> dict:
+        health = {p: "OK" for p in POLLUTANT_CONFIG}
+        health["dht"] = "OK"
+
         return {
             "device_id": CONFIG["DEVICE_ID"],
             "timestamp": get_iso_timestamp(),
             "status": "online",
             "battery_level": 98.5,
             "firmware_version": "v1.2.0-sim",
-            "sensors_health": {p: "OK" for p in POLLUTANT_CONFIG}
+            "sensors_health": health
         }
 
 
 class ESP32HardwareSensorManager(BaseSensorManager):
     """Lettura reale di eventuali sensori su ESP32"""
 
-    def __init__(self):
+    def __init__(self, dht_pin: int = 4):
         if is_esp32:
-            # import machine
-            # Inizializzazione bus I2C/SPI fisici
-            # self.i2c = machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21))
-            pass
+            import machine
+            import dht
+            self.dht_sensor = dht.DHT11(machine.Pin(dht_pin))
+            self.dht_status = "ERROR"
 
     def read_telemetry(self) -> dict:
         # Inserire le letture dei sensori reali
@@ -65,6 +71,22 @@ class ESP32HardwareSensorManager(BaseSensorManager):
             val = gauss(params["mean"], params["std"])
             sensors[pollutant] = round(max(0.0, val), 2)
 
+        if self.dht_sensor is not None:
+            try:
+                self.dht_sensor.measure()
+                sensors["temperature"] = self.dht_sensor.temperature()
+                sensors["humidity"] = self.dht_sensor.humidity()
+                self.dht_status = "OK"  # Lettura riuscita
+            except Exception as e:
+                print(f"[SENSORS] Errore lettura DHT: {e}")
+                sensors["temperature"] = None
+                sensors["humidity"] = None
+                self.dht_status = "ERROR"  # Timeout / cavo staccato / errori
+        else:
+            sensors["temperature"] = None
+            sensors["humidity"] = None
+            self.dht_status = "ERROR"
+            
         return {
             "device_id": CONFIG["DEVICE_ID"],
             "timestamp": get_iso_timestamp(),
@@ -72,13 +94,16 @@ class ESP32HardwareSensorManager(BaseSensorManager):
         }
 
     def read_health(self) -> dict:
+        health = {p: "OK" for p in POLLUTANT_CONFIG}
+        health["dht"] = self.dht_status
+
         return {
             "device_id": CONFIG["DEVICE_ID"],
             "timestamp": get_iso_timestamp(),
             "status": "online",
             "battery_level": 100.0,
             "firmware_version": "v1.2.0-hw",
-            "sensors_health": {p: "OK" for p in POLLUTANT_CONFIG}
+            "sensors_health": health
         }
 
 

@@ -42,7 +42,7 @@ CONFIG = {
 def load_config():
     if is_esp32:
         try:
-            with open("../.env.json", "r") as f:
+            with open(".env.json", "r") as f:
                 CONFIG.update(json.load(f))
                 print("[CONFIG] .env.json caricato correttamente")
         except Exception as e:

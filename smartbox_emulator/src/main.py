@@ -64,6 +64,9 @@ def shutdown_handler():
 
 
 async def main():
+
+    await asyncio.sleep(2)  # Finestra di tempo per connettersi da PC
+
     await assicura_wifi_connesso()
 
     tasks = [
@@ -85,6 +88,14 @@ async def main():
             except NotImplementedError:
                 pass
 
+    # Accensione led su ESP32 per sapere che è vivo e i task sono partiti
+    if is_esp32:
+        import machine
+        try:
+            _led_pin = machine.Pin(2, machine.Pin.OUT)
+            _led_pin.value(1)
+        except Exception as e:
+            print(f"[LED] Impossibile inizializzare il LED: {e}")
 
     # Il main rimane in attesa finché stop_event non viene attivato
     # La disconnessione pulita al momento può avvenire solo su PC, su ESP32 quando si stacca la corrente basta finisce tutto

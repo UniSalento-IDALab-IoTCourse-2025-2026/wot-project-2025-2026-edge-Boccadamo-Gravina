@@ -1,7 +1,7 @@
 import math
 import random
 import time
-from config import CONFIG, POLLUTANT_CONFIG, is_esp32
+from config import CONFIG, POLLUTANT_CONFIG, is_esp32, get_iso_timestamp
 
 # Funzione helper globale: utilizzabile ovunque senza problemi
 def gauss(mu=0.0, sigma=1.0):
@@ -28,19 +28,19 @@ class SimulatedSensorManager(BaseSensorManager):
     def read_telemetry(self) -> dict:
         sensors = {}
         for pollutant, params in POLLUTANT_CONFIG.items():
-            val = random.gauss(params["mean"], params["std"])
+            val = gauss(params["mean"], params["std"])
             sensors[pollutant] = round(max(0.0, val), 2)
 
         return {
             "device_id": CONFIG["DEVICE_ID"],
-            "timestamp": time.time(),
+            "timestamp": get_iso_timestamp(),
             "sensors": sensors
         }
 
     def read_health(self) -> dict:
         return {
             "device_id": CONFIG["DEVICE_ID"],
-            "timestamp": time.time(),
+            "timestamp": get_iso_timestamp(),
             "status": "online",
             "battery_level": 98.5,
             "firmware_version": "v1.2.0-sim",
@@ -49,11 +49,11 @@ class SimulatedSensorManager(BaseSensorManager):
 
 
 class ESP32HardwareSensorManager(BaseSensorManager):
-    """Lettura reale dai sensori su ESP32"""
+    """Lettura reale di eventuali sensori su ESP32"""
 
     def __init__(self):
         if is_esp32:
-            import machine
+            # import machine
             # Inizializzazione bus I2C/SPI fisici
             # self.i2c = machine.I2C(0, scl=machine.Pin(22), sda=machine.Pin(21))
             pass
@@ -67,14 +67,14 @@ class ESP32HardwareSensorManager(BaseSensorManager):
 
         return {
             "device_id": CONFIG["DEVICE_ID"],
-            "timestamp": time.time(),
+            "timestamp": get_iso_timestamp(),
             "sensors": sensors
         }
 
     def read_health(self) -> dict:
         return {
             "device_id": CONFIG["DEVICE_ID"],
-            "timestamp": time.time(),
+            "timestamp": get_iso_timestamp(),
             "status": "online",
             "battery_level": 100.0,
             "firmware_version": "v1.2.0-hw",

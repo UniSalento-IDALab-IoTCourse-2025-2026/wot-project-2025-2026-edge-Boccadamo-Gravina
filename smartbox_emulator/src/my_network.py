@@ -1,30 +1,60 @@
-import network
-import uasyncio as asyncio
+import asyncio
+from config import CONFIG, is_esp32
 
-SSID = "Vodafone-C01900130"
-PASSWORD = "KpbZa2psh9HpzKZY"
+# ESP32 non ha batteria per mantenere attivo orologio interno, bisogna fare sincronizzazione all'inizio
+def sincronizza_orologio_ntp():
+    """Sincronizza l'RTC dell'ESP32 tramite NTP server (solo MicroPython)."""
+    if not is_esp32:
+        return
 
-wlan = network.WLAN(network.STA_IF)
+    import ntptime
+    # Opzionale: puoi specificare un server NTP custom se necessario (default: pool.ntp.org)
+    # ntptime.host = "pool.ntp.org"
+    
+    try:
+        ntptime.settime()
+        print("[NTP] Orologio sincronizzato con successo.")
+    except Exception as e:
+        print(f"[NTP] Errore sincronizzazione orario: {e}")
+
+def is_wifi_connected() -> bool:
+    """Restituisce True se la rete è disponibile (chiamata solo da esp32)."""
+    import network
+    wlan = network.WLAN(network.STA_IF)
+    return wlan.isconnected()
+
+async def assicura_wifi_connesso():
+    """Attende la connessione Wi-Fi iniziale prima di proseguire."""
+    if not is_esp32:
+        return
+
+    import network
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+
+    if not wlan.isconnected():
+        print("[Wi-Fi] Connessione in corso a", CONFIG["SSID"], "...")
+        wlan.connect(CONFIG["SSID"], CONFIG["PASSWORD"])
+        while not wlan.isconnected():
+            await asyncio.sleep(0.5)
+
+    print("[Wi-Fi] Connesso! IP:", wlan.ifconfig()[0])
+    sincronizza_orologio_ntp()
 
 async def monitora_wifi():
-    """Task in background che mantiene attiva la connessione Wi-Fi."""
+    """Task in background che ripristina il Wi-Fi se cade."""
+    if not is_esp32:
+        return
 
-    wlan.active(True)
+    import network
+    wlan = network.WLAN(network.STA_IF)
+
     while True:
         if not wlan.isconnected():
-            print("\n[Wi-Fi] Disconnesso. Tentativo di connessione...")
-            wlan.connect(SSID, PASSWORD)
-            
-            # Attende fino a 10 secondi per la connessione
-            for _ in range(10):
-                if wlan.isconnected():
-                    break
+            print("\n[Wi-Fi] Connessione persa! Ripristino in corso...")
+            wlan.connect(CONFIG["SSID"], CONFIG["PASSWORD"])
+            while not wlan.isconnected():
                 await asyncio.sleep(1)
-                
-            if wlan.isconnected():
-                print("[Wi-Fi] Connesso! IP:", wlan.ifconfig()[0])
-            else:
-                print("[Wi-Fi] Riconnessione fallita, ci riprovo a breve...")
-                
-        # Controlla lo stato ogni 5 secondi
+            print("[Wi-Fi] Riconnesso! IP:", wlan.ifconfig()[0])
+            
         await asyncio.sleep(5)

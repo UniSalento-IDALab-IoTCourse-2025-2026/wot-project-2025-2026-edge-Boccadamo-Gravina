@@ -20,22 +20,21 @@ async def task_status_heartbeat():
     while not stop_event.is_set():
         if mqtt_mgr.client is None:
             await mqtt_mgr.connect()
-
-"""
-Se per test si vuole mandare misurazione anomala:
-{
-  "device_id": "sim-smartbox-001",
-  "timestamp": "2026-11-07T10:30:00.000000+00:00",
-  "sensors": {
-    "no2": 850.50,
-    "pm25": 1240.80,
-    "o3": 420.00,
-    "pah": 45.30,
-    "temperature": 10,
-    "humidity": 0
-  }
-}
-"""
+        """
+        Se per test si vuole mandare misurazione anomala:
+        {
+        "device_id": "sim-smartbox-001",
+        "timestamp": "2026-11-07T10:30:00.000000+00:00",
+        "sensors": {
+            "no2": 850.50,
+            "pm25": 1240.80,
+            "o3": 420.00,
+            "pah": 45.30,
+            "temperature": 10,
+            "humidity": 0
+        }
+        }
+        """
         try:
             health_data = sensor_mgr.read_health()
             success = mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], health_data, retain=True)

@@ -12,7 +12,9 @@ class DynamicMQTTClient:
         self.port = CONFIG["MQTT_PORT"]
         self.user = CONFIG["MQTT_USERNAME"]
         self.password = CONFIG["MQTT_PASSWORD"]
-        self.topic_status = CONFIG["MQTT_TOPIC_STATUS"]
+        # Risolve il placeholder {device_id} nel topic (es. "sensors/{device_id}/status")
+        self.topic_status = CONFIG["MQTT_TOPIC_STATUS"].format(device_id=self.device_id)
+        self.topic_data = CONFIG["MQTT_TOPIC_DATA"].format(device_id=self.device_id)
         self.client = None
         self._lock = asyncio.Lock() # Per gestire concorrenza dei task che richiedono connessione
 

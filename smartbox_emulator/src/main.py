@@ -37,7 +37,7 @@ async def task_status_heartbeat():
         """
         try:
             health_data = sensor_mgr.read_health()
-            success = mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], health_data, retain=True)
+            success = mqtt_mgr.publish(mqtt_mgr.topic_status, health_data, retain=True)
             if success:
                 print("[STATUS] Heartbeat inviato")
         except Exception as e:
@@ -59,7 +59,7 @@ async def task_telemetry():
         
         try:
             telemetry_data = sensor_mgr.read_telemetry()
-            success = mqtt_mgr.publish(CONFIG["MQTT_TOPIC_DATA"], telemetry_data)
+            success = mqtt_mgr.publish(mqtt_mgr.topic_data, telemetry_data)
             if success:
                 print(f"[TELEMETRY] Dati inviati -> {telemetry_data['sensors']}")
         except Exception as e:
@@ -90,7 +90,7 @@ async def main():
     ]
 
     await mqtt_mgr.connect()
-    mqtt_mgr.publish(CONFIG["MQTT_TOPIC_STATUS"], sensor_mgr.read_health(), retain=True)
+    mqtt_mgr.publish(mqtt_mgr.topic_status, sensor_mgr.read_health(), retain=True)
 
     # Gestione segnali OS per Linux/Docker (Ctrl+C / docker stop)
     if not is_esp32:

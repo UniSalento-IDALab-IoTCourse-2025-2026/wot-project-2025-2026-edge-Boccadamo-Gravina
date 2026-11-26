@@ -14,7 +14,7 @@ services:
     #   - MQTT_USERNAME=${MQTT_EDGE_DEVICE_USER}
     #   - MQTT_PASSWORD=${MQTT_EDGE_DEVICE_PASS}
     #   - MQTT_TOPIC_DATA=telemetry/air_quality
-    #   - MQTT_TOPIC_STATUS=telemetry/status
+    #   - MQTT_TOPIC_STATUS=sensors/status
       - DEVICE_ID=sim-smartbox-001
       - DEBUG_DELTA_MEAN=0
     #   - INTERVAL_STATUS_SEC=30  # Frequenza veloce per testare

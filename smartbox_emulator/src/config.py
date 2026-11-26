@@ -32,7 +32,7 @@ CONFIG = {
     "MQTT_USERNAME": None,
     "MQTT_PASSWORD": None,
     "MQTT_TOPIC_DATA": "telemetry/air_quality",
-    "MQTT_TOPIC_STATUS": "telemetry/status",
+    "MQTT_TOPIC_STATUS": "sensors/status",
     "DEVICE_ID": "smartbox-000",
     "DEBUG_DELTA_MEAN": 0,
     "INTERVAL_STATUS_SEC": 30,
